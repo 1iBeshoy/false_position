@@ -36,7 +36,7 @@
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
-            box-sizing: border-box; /* Ensures padding doesn't widen element */
+            box-sizing: border-box;
         }
         button {
             display: block;
@@ -60,7 +60,6 @@
             text-align: center;
         }
         
-        /* Table Styling to match Lecture Slide 37 */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -80,7 +79,7 @@
             background-color: #f9f9f9;
         }
         .highlight {
-            background-color: #d5f5e3; /* Light green for the final answer */
+            background-color: #d5f5e3;
             font-weight: bold;
         }
     </style>
@@ -135,7 +134,6 @@
 
     <script>
         function calculate() {
-            // Clear previous results
             const table = document.getElementById('result-table');
             const tbody = table.querySelector('tbody');
             const errorDiv = document.getElementById('error-msg');
@@ -143,15 +141,11 @@
             errorDiv.textContent = '';
             table.style.display = 'none';
 
-            // Get inputs
             let funcStr = document.getElementById('equation').value;
             let a = parseFloat(document.getElementById('a').value);
             let b = parseFloat(document.getElementById('b').value);
             const tolerance = parseFloat(document.getElementById('tolerance').value);
 
-            // Define the function f(x) safely
-            // Note: In a real production app, using eval() or new Function() with user input is risky.
-            // For a local student script, this is acceptable.
             let f;
             try {
                 f = new Function('x', 'return ' + funcStr);
@@ -160,7 +154,6 @@
                 return;
             }
 
-            // 1. Check Initial Assumption: f(a) * f(b) < 0 
             let fa = f(a);
             let fb = f(b);
 
@@ -174,18 +167,13 @@
             let n = 1;
             let c = 0;
             let fc = 0;
-            let maxIterations = 50; // Safety break
+            let maxIterations = 50;
 
-            // Loop until root is found or max iterations reached [cite: 25]
             while (n <= maxIterations) {
                 
-                // 2. Calculate c using the formula 
-                // c = (a*f(b) - b*f(a)) / (f(b) - f(a))
                 c = (a * fb - b * fa) / (fb - fa);
                 fc = f(c);
 
-                // Determine update rule based on sign [cite: 22, 24]
-                // If f(c) has same sign as f(a), replace a. Else replace b.
                 let updateStr = "";
                 let nextStep = "";
 
@@ -200,7 +188,6 @@
                     nextStep = "b = c";
                 }
 
-                // Add row to table
                 let row = `<tr>
                     <td>${n}</td>
                     <td>${a.toFixed(5)}</td>
@@ -212,7 +199,6 @@
                     <td>${nextStep}</td>
                 </tr>`;
                 
-                // If found, highlight and add row, then break
                 if (Math.abs(fc) <= tolerance) {
                     row = `<tr class="highlight">
                         <td>${n}</td>
@@ -230,13 +216,12 @@
 
                 tbody.innerHTML += row;
 
-                // 4. Update a or b for next iteration [cite: 22, 24]
                 if (fa * fc > 0) {
                     a = c;
-                    fa = fc; // Update f(a) so we don't recalculate
+                    fa = fc;
                 } else {
                     b = c;
-                    fb = fc; // Update f(b)
+                    fb = fc;
                 }
 
                 n++;

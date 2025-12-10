@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>False Position Method Calculator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .container {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box; /* Ensures padding doesn't widen element */
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .error {
+            color: #e74c3c;
+            margin-top: 10px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        /* Table Styling to match Lecture Slide 37 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #2c3e50;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .highlight {
+            background-color: #d5f5e3; /* Light green for the final answer */
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>False Position Method</h1>
+    
+    <div class="container">
+        <div class="input-group">
+            <label for="equation">Function f(x):</label>
+            <input type="text" id="equation" placeholder="e.g., x * Math.log10(x) - 1" value="x * Math.log10(x) - 1">
+            <small style="color: #666;">Note: Use JavaScript syntax. For log base 10 (as in lecture), use <code>Math.log10(x)</code>.</small>
+        </div>
+
+        <div class="input-group">
+            <label for="a">Initial Guess a (Negative side):</label>
+            <input type="number" id="a" placeholder="e.g., 2" step="any" value="2">
+        </div>
+
+        <div class="input-group">
+            <label for="b">Initial Guess b (Positive side):</label>
+            <input type="number" id="b" placeholder="e.g., 3" step="any" value="3">
+        </div>
+
+        <div class="input-group">
+            <label for="tolerance">Tolerance (Error):</label>
+            <input type="number" id="tolerance" placeholder="e.g., 0.001" step="any" value="0.001">
+        </div>
+
+        <button onclick="calculate()">Calculate Root</button>
+
+        <div id="error-msg" class="error"></div>
+
+        <table id="result-table" style="display:none;">
+            <thead>
+                <tr>
+                    <th>n</th>
+                    <th>a</th>
+                    <th>f(a)</th>
+                    <th>b</th>
+                    <th>f(b)</th>
+                    <th>c</th>
+                    <th>f(c)</th>
+                    <th>Update</th>
+                </tr>
+            </thead>
+            <tbody>
+                </tbody>
+        </table>
+    </div>
+
+    <script>
+        function calculate() {
+            // Clear previous results
+            const table = document.getElementById('result-table');
+            const tbody = table.querySelector('tbody');
+            const errorDiv = document.getElementById('error-msg');
+            tbody.innerHTML = '';
+            errorDiv.textContent = '';
+            table.style.display = 'none';
+
+            // Get inputs
+            let funcStr = document.getElementById('equation').value;
+            let a = parseFloat(document.getElementById('a').value);
+            let b = parseFloat(document.getElementById('b').value);
+            const tolerance = parseFloat(document.getElementById('tolerance').value);
+
+            // Define the function f(x) safely
+            // Note: In a real production app, using eval() or new Function() with user input is risky.
+            // For a local student script, this is acceptable.
+            let f;
+            try {
+                f = new Function('x', 'return ' + funcStr);
+            } catch (e) {
+                errorDiv.textContent = "Invalid function syntax.";
+                return;
+            }
+
+            // 1. Check Initial Assumption: f(a) * f(b) < 0 
+            let fa = f(a);
+            let fb = f(b);
+
+            if (fa * fb >= 0) {
+                errorDiv.textContent = "Error: f(a) and f(b) must have opposite signs. Please change your initial guesses.";
+                return;
+            }
+
+            table.style.display = 'table';
+
+            let n = 1;
+            let c = 0;
+            let fc = 0;
+            let maxIterations = 50; // Safety break
+
+            // Loop until root is found or max iterations reached [cite: 25]
+            while (n <= maxIterations) {
+                
+                // 2. Calculate c using the formula 
+                // c = (a*f(b) - b*f(a)) / (f(b) - f(a))
+                c = (a * fb - b * fa) / (fb - fa);
+                fc = f(c);
+
+                // Determine update rule based on sign [cite: 22, 24]
+                // If f(c) has same sign as f(a), replace a. Else replace b.
+                let updateStr = "";
+                let nextStep = "";
+
+                if (Math.abs(fc) <= tolerance) {
+                    updateStr = "Root found";
+                    nextStep = "STOP";
+                } else if (fa * fc > 0) {
+                    updateStr = "f(c) matches f(a)"; 
+                    nextStep = "a = c";
+                } else {
+                    updateStr = "f(c) matches f(b)";
+                    nextStep = "b = c";
+                }
+
+                // Add row to table
+                let row = `<tr>
+                    <td>${n}</td>
+                    <td>${a.toFixed(5)}</td>
+                    <td>${fa.toFixed(5)}</td>
+                    <td>${b.toFixed(5)}</td>
+                    <td>${fb.toFixed(5)}</td>
+                    <td style="font-weight:bold; color:#2980b9;">${c.toFixed(5)}</td>
+                    <td>${fc.toFixed(5)}</td>
+                    <td>${nextStep}</td>
+                </tr>`;
+                
+                // If found, highlight and add row, then break
+                if (Math.abs(fc) <= tolerance) {
+                    row = `<tr class="highlight">
+                        <td>${n}</td>
+                        <td>${a.toFixed(5)}</td>
+                        <td>${fa.toFixed(5)}</td>
+                        <td>${b.toFixed(5)}</td>
+                        <td>${fb.toFixed(5)}</td>
+                        <td>${c.toFixed(5)}</td>
+                        <td>${fc.toFixed(5)}</td>
+                        <td><strong>Root Found</strong></td>
+                    </tr>`;
+                    tbody.innerHTML += row;
+                    break;
+                }
+
+                tbody.innerHTML += row;
+
+                // 4. Update a or b for next iteration [cite: 22, 24]
+                if (fa * fc > 0) {
+                    a = c;
+                    fa = fc; // Update f(a) so we don't recalculate
+                } else {
+                    b = c;
+                    fb = fc; // Update f(b)
+                }
+
+                n++;
+            }
+        }
+    </script>
+</body>
+</html>
